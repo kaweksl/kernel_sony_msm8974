@@ -432,12 +432,6 @@ __und_usr:
 	@
 	adr	r9, BSYM(ret_from_exception)
 
-	@ IRQs must be enabled before attempting to read the instruction from
-	@ user space since that could cause a page/translation fault if the
-	@ page table was modified by another CPU.
-	enable_irq
-
-	adr	lr, BSYM(__und_usr_unknown)
 	tst	r3, #PSR_T_BIT			@ Thumb mode?
 	itet	eq				@ explicit IT needed for the 1f label
 	subeq	r4, r2, #4			@ ARM instr at LR - 4
@@ -461,7 +455,7 @@ __und_usr:
 	ldr	r5, .LCcpu_architecture
 	ldr	r5, [r5]
 	cmp	r5, #CPU_ARCH_ARMv7
-	blo	__und_usr_unknown
+	blo	__und_usr_fault_16		@ 16bit undefined instruction
 /*
  * The following code won't get run unless the running CPU really is v7, so
  * coding round the lack of ldrht on older arches is pointless.  Temporarily
@@ -474,7 +468,7 @@ __und_usr:
  THUMB(	ldrht	r5, [r4]	)
  THUMB(	add	r4, r4, #2	)
 	cmp	r5, #0xe800			@ 32bit instruction if xx != 0
-	blo	__und_usr_unknown
+	blo	__und_usr_fault_16		@ 16bit undefined instruction
 3:	ldrht	r0, [r4]
 	add	r2, r2, #2			@ r2 is PC + 2, make it PC + 4
 	orr	r0, r0, r5, lsl #16
@@ -488,7 +482,7 @@ __und_usr:
 #endif
 #endif /* __LINUX_ARM_ARCH__ < 7 */
 #else /* !(CONFIG_ARM_THUMB && __LINUX_ARM_ARCH__ >= 6 && CONFIG_CPU_V7) */
-	b	__und_usr_unknown
+	b	__und_usr_fault_16
 #endif
  UNWIND(.fnend		)
 ENDPROC(__und_usr)
@@ -667,11 +661,17 @@ ENTRY(no_fp)
 	mov	pc, lr
 ENDPROC(no_fp)
 
-__und_usr_unknown:
+__und_usr_fault_32:
+	mov	r1, #4
+	b	1f
+__und_usr_fault_16:
+	mov	r1, #2
+1:	enable_irq
 	mov	r0, sp
 	adr	lr, BSYM(ret_from_exception)
 	b	do_undefinstr
-ENDPROC(__und_usr_unknown)
+ENDPROC(__und_usr_fault_32)
+ENDPROC(__und_usr_fault_16)
 
 	.align	5
 __pabt_usr:
