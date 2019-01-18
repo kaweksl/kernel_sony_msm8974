@@ -2997,6 +2997,13 @@ config MSM_L2_ERP_PORT_PANIC
 	  being on). This option may help with debugging, though production
 	  builds should probably say 'N' here.
 
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	default y
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC.
+
 config MSM_L2_ERP_1BIT_PANIC
 	bool "Panic on recoverable L2 soft errors"
 	depends on MSM_CACHE_ERP
