@@ -832,7 +832,7 @@ static inline void wakeup_gesture_do_init(struct device *dev)
 		} else {
 			dev_info(dev, "Touch Wakeup Feature ON\n");
 			device_init_wakeup(&client->dev, 1);
-			device_set_wakeup_enable(&client->dev, true);
+			device_set_wakeup_enable(&client->dev, false);
 		}
 	} else {
 		dev_info(dev, "Touch Wakeup Feature OFF\n");
